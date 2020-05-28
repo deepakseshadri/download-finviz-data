@@ -22,10 +22,11 @@ class Finviz:
         """
         Takes finviz page access integer and returns a beautifulsoup object
         """
+        count = int(count)
         url = f'http://finviz.com/screener.ashx?v=151&r={count}&c=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,' \
               f'21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,' \
               f'54,55,56,57,58,59,60,61,62,63,64,65,66,67,68'
-        logger.info(f'scraping page at {url}')
+        logger.debug(f'scraping page at {url}')
         try:
             self.request_object = self.s.get(url)
         except Exception as err_msg:
@@ -34,7 +35,7 @@ class Finviz:
 
     def get_page_count(self):
         """
-        Takes the first page of finviz screener and returns a list of page access integers
+        Takes the first page of finviz screener URL and returns a list of page access integers
         """
         data = list()
         page_count_object = self.bsoup_object.find('select', id='pageSelect')
@@ -88,7 +89,7 @@ class Finviz:
 
     def run(self):
         res = list()
-        self.download_data(1)
+        self.download_data('  ')
         self.generate_bsoup_object()
         count = self.get_page_count()
         res.append(self.get_table_header())

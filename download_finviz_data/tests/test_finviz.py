@@ -13,6 +13,9 @@ class TestFinviz(unittest.TestCase):
     def setUpClass(cls):
         cls.f = Finviz()
 
+    def test_download_data_exception(self):
+        self.assertRaises(ValueError, self.f.download_data, 'a')
+
     def test_download_data(self):
         self.f.download_data(1)
         self.assertEqual(self.f.request_object.status_code, 200)
