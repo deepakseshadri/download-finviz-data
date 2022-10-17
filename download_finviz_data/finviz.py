@@ -109,7 +109,7 @@ class Finviz:
 
 def write_to_file(data, fn):
     """
-    Write data to a CSV file
+    Write data to a file in CSV format
     """
     logger.info(f'writing to file {fn}')
     try:
