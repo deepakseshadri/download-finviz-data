@@ -1,11 +1,13 @@
 # download-finviz-data
 
-www.finviz.com has a wealth of information about US Equities that is available on their website.  They have 68
-different metrics for each symbol and they cover pretty much all of US Equities. This project scrapes that information
-from their site and stores it in CSV format.
+www.finviz.com has a wealth of information about US Equities that is available on the "screener" section of their 
+website.  They have 68 different metrics for each symbol and they cover pretty much all of US Equities. This project 
+scrapes that information from their site and stores it in CSV format.
 
 I have written this code such that only one session is established to their site per run so the load on their server
-is minimal. I intend to keep it this way.
+is minimal and doesn't trigger the access limit from each IP. I intend to keep it this way. Yes, it could be 
+parallelized to have it finish in a fraction of the current runtime but the site blocks access when you cross a 
+certain access threshold.
 
 
 Running it once a day, after market close, should be more than enough as data is not updated
