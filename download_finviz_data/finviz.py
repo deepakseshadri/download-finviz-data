@@ -37,7 +37,7 @@ class Finviz:
         """
         Takes the first page of finviz screener URL and returns a list of page access integers
         """
-        data = list()
+        data = []
         page_count_object = self.bsoup_object.find('select', id='pageSelect')
         logger.debug(f'page count HTML raw object: {page_count_object}')
         for i in page_count_object.find_all('option'):
@@ -59,25 +59,27 @@ class Finviz:
         """
         Get table rows
         """
-        data = list()
-        table_rows_object = self.bsoup_object.find_all('tr', {'class': re.compile('table-(dark|light)-row-cp')})
+        data = []
+        table = self.bsoup_object.find('table', {'class': re.compile('table-(dark|light)')})
+        table_rows_object = table.tr.find_all('tr')
         for row in table_rows_object:
             logger.debug(f'table row: {row}')
             table_row_cells = row.find_all('td', {'class': 'screener-body-table-nw'})
             logger.debug(f'table row data: {table_row_cells}')
-            extracted_data = list()
+            extracted_data = []
             for x in table_row_cells:
                 if x.a:
                     x = x.a
                 if x.span:
                     x = x.span
                 extracted_data.append(str(x.text.strip()))
-            logger.debug(f'row extracted and cleaned data: {extracted_data}')
-            if not len(extracted_data) == 68:
+            logger.debug(f'row extracted and cleaned data: {len(extracted_data)}')
+            if len(extracted_data) != 68:
                 logger.error(f'column count mismatch: expected 68, found only {len(extracted_data)} at '
                              f'symbol {extracted_data[0]}')
                 sys.exit(1)
             data.append(extracted_data)
+        logger.debug(f'length of data is: {len(data)}')
         logger.info(f'extracted data for symbols {data[0][0]} - {data[-1][0]}')
         return data
 
@@ -89,7 +91,7 @@ class Finviz:
 
     def run(self):
         res = list()
-        self.download_data('  ')
+        self.download_data(1)
         self.generate_bsoup_object()
         count = self.get_page_count()
         res.append(self.get_table_header())
@@ -98,7 +100,6 @@ class Finviz:
         for i in count[1:]:
             self.download_data(i)
             self.generate_bsoup_object()
-            res.append(self.get_table_header())
             rows = self.get_table_rows()
             res += rows
 
