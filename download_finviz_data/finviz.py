@@ -49,7 +49,7 @@ class Finviz:
         """
         Get table header
         """
-        table_header = self.bsoup_object.find_all('td', {'class': re.compile('table-top*')})
+        table_header = self.bsoup_object.find_all('th', {'class': re.compile('table-header')})
         logger.debug(f'table header text: {table_header}')
         cleaned_table_header_data = [str(x.text.strip()) for x in table_header]
         logger.debug(f'cleaned table header data: {cleaned_table_header_data}')
@@ -60,11 +60,11 @@ class Finviz:
         Get table rows
         """
         data = []
-        table = self.bsoup_object.find('table', {'class': re.compile('table-(dark|light)')})
-        table_rows_object = table.tr.find_all('tr')
+        table = self.bsoup_object.find('table', {'class': re.compile('screener_table')})
+        table_rows_object = table.find_all('tr', {'class': re.compile('styled-row')})
         for row in table_rows_object:
             logger.debug(f'table row: {row}')
-            table_row_cells = row.find_all('td', {'class': 'screener-body-table-nw'})
+            table_row_cells = row.find_all('td')
             logger.debug(f'table row data: {table_row_cells}')
             extracted_data = []
             for x in table_row_cells:
