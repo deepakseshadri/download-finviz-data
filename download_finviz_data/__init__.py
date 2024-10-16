@@ -5,14 +5,19 @@ import logging
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--log-level',
+        '-l', '--log-level',
         choices=['DEBUG', 'INFO', 'ERROR'],
         default='INFO',
         help='Logging level'
     )
     parser.add_argument(
-        '--out-file',
+        '-o', '--out-file',
         help='Write the output to a file.  Provide full path'
+    )
+    parser.add_argument(
+        '-t', '--test',
+        action='store_true',
+        help='Test script (downloads only the first page)'
     )
     return parser.parse_args()
 

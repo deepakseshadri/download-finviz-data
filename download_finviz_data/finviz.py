@@ -97,11 +97,12 @@ class Finviz:
         res.append(self.get_table_header())
         rows = self.get_table_rows()
         res += rows
-        for i in count[1:]:
-            self.download_data(i)
-            self.generate_bsoup_object()
-            rows = self.get_table_rows()
-            res += rows
+        if not args.test:
+            for i in count[1:]:
+                self.download_data(i)
+                self.generate_bsoup_object()
+                rows = self.get_table_rows()
+                res += rows
 
         if args.out_file:
             write_to_file(res, args.out_file)
