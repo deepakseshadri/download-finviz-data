@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name='download_finviz_data',
-    version='0.1',
+    version='0.11',
     description='Download FINVIZ US Equities data by scraping the HTML tables on the site',
     long_description=readme(),
     author='Deepak Seshadri',
