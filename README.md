@@ -1,30 +1,29 @@
 # download-finviz-data
 
-www.finviz.com has a wealth of information about US Equities that is available on the "screener" section of their 
-website.  They have 68 different metrics for each symbol and they cover pretty much all of US Equities. This project 
-scrapes that information from their site and stores it in CSV format.
+www.finviz.com has a wealth of information about US equities and ETFs in the "screener" section of their website.
+This project downloads every row and every field of both the stock screener (`/screener/stocks`) and the ETF
+screener (`/screener/etf`) and stores it as CSV (optionally gzip-compressed).
 
-I have written this code such that only one session is established to their site per run so the load on their server
-is minimal and doesn't trigger the access limit from each IP. I intend to keep it this way. Yes, it could be 
-parallelized to have it finish in a fraction of the current runtime but the site blocks access when you cross a 
-certain access threshold.
+Each screener page embeds its data as JSON (`<script type="application/json">`); that payload is parsed directly.
+The visible HTML grid is virtualized and only renders a subset of the columns, so it is not scraped.
 
+Only one session is established to their site per run, and requests are spaced out (see `--delay`) so the load on
+their server is minimal. Do not parallelize or speed it up: Cloudflare blocks the IP (for 10+ minutes, observed
+2026-11-13) after ~50 pages at ~3.6s spacing, and every extra attempt while blocked risks a longer block. A full run
+is ~590 pages and takes ~2 hours at the default delay, longer if it has to wait out a block.
 
-Running it once a day, after market close, should be more than enough as data is not updated
-that often.
+Running it once a day, after market close, should be more than enough as data is not updated that often.
 
 
 ## Installation
 
-This code has been tested only with Python 3.8+
 ```
 cd download-finviz-data
-python setup.py develop
+pip install -e .
 ```
 
 ## Uninstall
 
-Use pip to remove it
 ```
 pip uninstall download-finviz-data
 ```
@@ -36,27 +35,59 @@ To see available options
 download_finviz_data -h
 ```
 
-To run it with default options and save the output to a file
+Download everything to a gzip-compressed CSV (gzip is used whenever the file name ends in `.gz`)
 ```
-download_finviz_data --out-file /tmp/finviz.csv
+download_finviz_data --out-file /tmp/finviz.csv.gz
 ```
 
-## Contribution
-Please open an issue first to discuss what you would like to change.  Pull requests are welcome.
+Quick check that the site still parses (first page of each screener only)
+```
+download_finviz_data -t -o /tmp/finviz_test.csv.gz
+```
 
-Please make sure to update tests as appropriate.
+| Option | Default | Description |
+|---|---|---|
+| `-o`, `--out-file` | required | Output path; `.gz` suffix means gzip |
+| `-d`, `--delay` | `10.0` | Base seconds between requests; each wait is stretched by a random +10–30% (never shorter) |
+| `-t`, `--test` | off | Only the first page of each screener |
+| `-l`, `--log-level` | `INFO` | `DEBUG`, `INFO` or `ERROR` |
+
+The process exits with status 1 and logs the reason if anything goes wrong; no output file is written in that case.
+
+## Output format
+
+* One row per ticker: stocks first, then ETFs.
+* Columns are Finviz's own field names, as returned (`ticker`, `company`, `marketCap`, `PE`, `e.NetExpenseRatio`,
+  `range52w.low`, ...). `ticker` and `company` come first, the rest in the order Finviz returns them. The set of
+  columns is whatever Finviz returns, so new fields appear automatically; read columns by name, not position.
+* Fields that don't apply to a row (e.g. `PE` for an ETF, `e.NetExpenseRatio` for a stock) are empty.
+* Values are raw numbers, not display strings. Floats are rounded to 4 decimal places.
+  * `marketCap`, `sharesOutstanding2` and `sharesFloat` are in millions (e.g. `49044.35` = $49.04B).
+  * Percentages are plain numbers in percent units (`dividendYield` `0.59` = 0.59%).
+  * `earningsDate` is an ISO datetime (`2026-11-23T16:30:00`).
+
+```python
+import pandas as pd
+df = pd.read_csv('/tmp/finviz.csv.gz')
+```
+
+## Reliability
+
+* Cloudflare challenges, HTTP 429/5xx and connection errors are retried on the same page after 15, 30, 30 and 30
+  minutes (same +10–30% jitter); rows already fetched are kept, so the run resumes where it was blocked. If one page
+  still fails, or the run's retry waits would exceed 4 hours in total, the run fails.
+* Progress is logged every 50 pages.
+* A run fails rather than writing bad data when the page's JSON is missing, a page comes back empty or with the
+  wrong offset, a row has no ticker, or far fewer unique tickers arrive than Finviz reports. Small drift (listings
+  changing during the run) and duplicate tickers are logged as warnings.
+
+## Testing
+
+```
+pip install pytest
+pytest              # offline tests against saved Finviz pages
+pytest -m live      # also hits finviz.com (2 requests)
+```
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
-
-
-## Testing
-```
-pip install coverage
-coverage run -m unittest
-```
-
-To see the coverage report
-```
-coverage report -m
-```

@@ -8,8 +8,8 @@ def readme():
 
 setup(
     name='download_finviz_data',
-    version='0.11',
-    description='Download FINVIZ US Equities data by scraping the HTML tables on the site',
+    version='0.12',
+    description='Download all FINVIZ stock and ETF screener data to CSV',
     long_description=readme(),
     author='Deepak Seshadri',
     packages=find_packages(),
