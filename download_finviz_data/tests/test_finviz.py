@@ -2,6 +2,7 @@ import csv
 import gzip
 import logging
 import random
+from pathlib import Path
 
 import pytest
 import requests
@@ -446,6 +447,22 @@ class TestRun:
                 ['A', 'A Inc', '10.5', ''],
                 ['SPY', 'SPY Inc', '', '99'],
             ]
+
+    def test_crash_mid_write_keeps_previous_file_and_leaves_no_partial(self, session, sleeps, tmp_path, monkeypatch):
+        session.add('stocks', 1, FakeResponse(make_page([make_row('A')], 1, 0)))
+        session.add('etf', 1, FakeResponse(make_page([make_row('SPY')], 1, 0)))
+        out = tmp_path / 'finviz.csv'
+        out.write_text('previous run')
+
+        def crash(rows, columns, path):
+            Path(path).write_text('ticker,comp')
+            raise FinvizError('disk full')
+
+        monkeypatch.setattr(finviz, 'write_csv', crash)
+        with pytest.raises(FinvizError):
+            finviz.run(out, client=make_client(session, sleeps))
+        assert out.read_text() == 'previous run'
+        assert [p.name for p in tmp_path.iterdir()] == ['finviz.csv']
 
     def test_failure_writes_no_file(self, session, sleeps, tmp_path):
         session.add('stocks', 1, FakeResponse('<html>redesign</html>'))

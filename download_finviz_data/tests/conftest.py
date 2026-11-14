@@ -1,14 +1,28 @@
+import csv
 import json
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
+from download_finviz_data.csvio import open_text
+
 FIXTURES = Path(__file__).parent / 'fixtures'
 
 
 def fixture_html(name: str) -> str:
     return (FIXTURES / name).read_text()
+
+
+def write_old_format(path, header: list, rows: list) -> None:
+    """Write a CSV exactly as the old HTML scraper did (every field quoted, CRLF)."""
+    with open_text(path, 'w') as f:
+        csv.writer(f, quotechar='"', quoting=csv.QUOTE_ALL).writerows([header, *rows])
+
+
+def read_csv(path) -> list:
+    with open_text(path, 'r') as f:
+        return list(csv.reader(f))
 
 
 def make_row(ticker: str, **numbers) -> dict:

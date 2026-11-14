@@ -5,14 +5,13 @@ import pytest
 
 from download_finviz_data import repair
 from download_finviz_data.repair import Row
+from download_finviz_data.tests.conftest import read_csv as read, write_old_format
 
 OLD_HEADER = ['Ticker', 'Company', 'Sector', 'Price']
 
 
 def write_old(path, rows, header=OLD_HEADER):
-    """Write a file exactly as the old scraper did (QUOTE_ALL, CRLF)."""
-    with repair.open_text(path, 'w') as f:
-        csv.writer(f, quotechar='"', quoting=csv.QUOTE_ALL).writerows([header, *rows])
+    write_old_format(path, header, rows)
 
 
 def write_new(path, rows):
@@ -23,21 +22,7 @@ def write_new(path, rows):
         writer.writerows(rows)
 
 
-def read(path):
-    with repair.open_text(path, 'r') as f:
-        return list(csv.reader(f))
-
-
 # --------------------------------------------------------------------------- small helpers
-
-class TestFileDate:
-    def test_plain_and_gzip_names(self, tmp_path):
-        assert repair.file_date(tmp_path / '2026-07-15.csv') == date(2026, 7, 15)
-        assert repair.file_date(tmp_path / '2026-11-14.csv.gz') == date(2026, 11, 14)
-
-    def test_non_dated_name_is_none(self, tmp_path):
-        assert repair.file_date(tmp_path / 'notes.csv') is None
-
 
 class TestIsTruncated:
     def test_all_single_letters(self):

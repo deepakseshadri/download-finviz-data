@@ -17,20 +17,17 @@ re-run when newer reference files exist (e.g. a fresh full download to recover p
 
 from __future__ import annotations
 
-import argparse
 import bisect
 import csv
 import logging
-import os
-import re
 import shutil
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 from typing import Iterable, NamedTuple, Optional
 
-from download_finviz_data import setup_logging
-from download_finviz_data.csvio import open_text
+from download_finviz_data import data_dir_parser, setup_logging
+from download_finviz_data.csvio import file_date, open_text, write_atomic
 
 
 logger = logging.getLogger(__name__)
@@ -38,18 +35,11 @@ logger = logging.getLogger(__name__)
 BACKUP_DIR = '_backup_truncated'
 REPORT_FILE = '_repair_report.csv'
 REPORT_HEADER = ['file', 'row', 'letter', 'company', 'reason']
-_DATED_FILE = re.compile(r'^(\d{4}-\d{2}-\d{2})\.csv(\.gz)?$')
 
 
 class Row(NamedTuple):
     letter: str
     company: str
-
-
-def file_date(path) -> Optional[date]:
-    """Date encoded in a download's file name (YYYY-MM-DD.csv[.gz]), else None."""
-    match = _DATED_FILE.match(Path(path).name)
-    return date.fromisoformat(match.group(1)) if match else None
 
 
 def is_truncated(tickers: Iterable[str]) -> bool:
@@ -70,10 +60,11 @@ def read_table(path) -> tuple[list[str], list[list[str]], int, int]:
 
 def _write_old_format(path: Path, header: list[str], rows: list[list[str]]) -> None:
     """Rewrite atomically in the old scraper's exact dialect (all fields quoted, CRLF)."""
-    tmp = path.with_name(f'.{path.name}')
-    with open_text(tmp, 'w') as f:
-        csv.writer(f, quotechar='"', quoting=csv.QUOTE_ALL).writerows([header, *rows])
-    os.replace(tmp, path)
+    def write(tmp: Path) -> None:
+        with open_text(tmp, 'w') as f:
+            csv.writer(f, quotechar='"', quoting=csv.QUOTE_ALL).writerows([header, *rows])
+
+    write_atomic(path, write)
 
 
 def _days_outside(span: tuple[date, date], when: date) -> int:
@@ -199,11 +190,7 @@ def repair_dir(data_dir, dry_run: bool = False) -> dict[str, dict[str, int]]:
 
 
 def main(argv: Optional[list[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description='Recover truncated tickers in old Finviz downloads')
-    parser.add_argument('--data-dir', required=True, help='Directory of YYYY-MM-DD.csv[.gz] downloads')
-    parser.add_argument('--dry-run', action='store_true', help='Report what would be recovered; write nothing')
-    parser.add_argument('-l', '--log-level', choices=['DEBUG', 'INFO', 'ERROR'], default='INFO')
-    args = parser.parse_args(argv)
+    args = data_dir_parser('Recover truncated tickers in old Finviz downloads').parse_args(argv)
     setup_logging(args.log_level)
 
     summary = repair_dir(args.data_dir, dry_run=args.dry_run)

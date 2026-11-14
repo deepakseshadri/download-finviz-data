@@ -96,7 +96,27 @@ python -m download_finviz_data.repair --data-dir ~/Downloads/finviz_data
 * Rows that can't be recovered with certainty keep their single letter and are listed in `_repair_report.csv`
   (`not_found`, `ambiguous` or `order_conflict`).
 * Re-runs start from the backups, so running it again after newer full downloads exist recovers more (e.g. ETFs
-  listed after July, which no earlier file knows).
+  listed after July, which no earlier file knows). The re-run writes those files in the old display format again, so
+  run `normalize` afterwards.
+
+## Normalizing old downloads (files up to 2026-09-29)
+
+Downloads written by the old HTML scraper hold Finviz's display strings (`11.08B`, `0.95%`, `4,633,710`,
+`Oct 15/a`) under display headers (`Market Cap`). `normalize` rewrites them in the current output format: Finviz's
+field names as headers and raw numbers in the same units as new downloads (see Output format).
+
+```
+python -m download_finviz_data.normalize --data-dir ~/Downloads/finviz_data --dry-run   # check only
+python -m download_finviz_data.normalize --data-dir ~/Downloads/finviz_data
+```
+
+* `Earnings` (`Oct 15/a`) becomes `earningsDate` (`2026-10-15`, the year nearest the file's date) plus
+  `earningsTiming` (`a` after close, `b` before open, empty if unknown). New downloads carry a full datetime in
+  `earningsDate` instead.
+* Old files have the original 68 fields only; `averageVolume`, `marketCap` etc. keep the old display precision
+  (`2.25M` becomes `2250000`).
+* Any value that doesn't match its column's expected format stops the run with the file, row and column named.
+* Originals are copied to `_backup_formatted/`; files already in the new format are skipped, so re-running is safe.
 
 ## Testing
 

@@ -17,7 +17,7 @@ from typing import Callable, Iterable, Optional
 import requests
 from bs4 import BeautifulSoup as BSoup
 
-from download_finviz_data.csvio import open_text
+from download_finviz_data.csvio import open_text, write_atomic
 
 
 logger = logging.getLogger(__name__)
@@ -254,5 +254,6 @@ class FinvizClient:
 def run(out_file, client: Optional[FinvizClient] = None, first_page_only: bool = False) -> None:
     """Download everything and write it to `out_file`. Nothing is written if any step fails."""
     rows = (client or FinvizClient()).download_all(first_page_only)
-    write_csv(rows, collect_columns(rows), out_file)
+    columns = collect_columns(rows)
+    write_atomic(out_file, lambda tmp: write_csv(rows, columns, tmp))
     logger.info('data written to file successfully')
