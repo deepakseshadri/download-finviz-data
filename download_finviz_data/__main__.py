@@ -3,6 +3,7 @@ import logging
 import sys
 from typing import Optional
 
+from download_finviz_data import setup_logging
 from download_finviz_data.finviz import DEFAULT_DELAY, FinvizClient, FinvizError, run
 
 
@@ -45,10 +46,7 @@ def parse_arguments(argv: Optional[list[str]] = None) -> argparse.Namespace:
 
 def main(argv: Optional[list[str]] = None) -> None:
     args = parse_arguments(argv)
-    logging.basicConfig(
-        level=args.log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    )
+    setup_logging(args.log_level)
     logger.info('starting')
     try:
         run(args.out_file, client=FinvizClient(delay=args.delay), first_page_only=args.test)

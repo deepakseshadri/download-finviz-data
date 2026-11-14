@@ -8,16 +8,16 @@ source of truth (the visible HTML grid is virtualized and only renders a subset 
 from __future__ import annotations
 
 import csv
-import gzip
 import json
 import logging
 import random
 import time
-from pathlib import Path
 from typing import Callable, Iterable, Optional
 
 import requests
 from bs4 import BeautifulSoup as BSoup
+
+from download_finviz_data.csvio import open_text
 
 
 logger = logging.getLogger(__name__)
@@ -142,11 +142,9 @@ def validate_rows(rows: list[dict], expected_total: Optional[int], screener: str
 
 def write_csv(rows: list[dict], columns: list[str], path) -> None:
     """Write rows as CSV; gzip-compressed when the path ends in .gz."""
-    path = Path(path)
-    opener = gzip.open if path.suffix.lower() == '.gz' else open
     logger.info(f'writing {len(rows)} rows x {len(columns)} columns to {path}')
     try:
-        with opener(path, 'wt', newline='') as f:
+        with open_text(path, 'w') as f:
             writer = csv.DictWriter(f, fieldnames=columns, restval='')
             writer.writeheader()
             writer.writerows(rows)

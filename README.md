@@ -81,6 +81,23 @@ df = pd.read_csv('/tmp/finviz.csv.gz')
   wrong offset, a row has no ticker, or far fewer unique tickers arrive than Finviz reports. Small drift (listings
   changing during the run) and duplicate tickers are logged as warnings.
 
+## Repairing truncated tickers (files from 2026-07-15 to 2026-09-29)
+
+A Finviz markup change made the old scraper keep only the first character of each ticker in those files; every other
+column is intact. `repair` recovers the tickers from the company names using the intact files in the same directory
+(nearest sighting in time, same first letter, and Finviz's ticker sort order as a cross-check):
+
+```
+python -m download_finviz_data.repair --data-dir ~/Downloads/finviz_data --dry-run   # counts only
+python -m download_finviz_data.repair --data-dir ~/Downloads/finviz_data
+```
+
+* Originals are copied to `_backup_truncated/` first; only the ticker field changes.
+* Rows that can't be recovered with certainty keep their single letter and are listed in `_repair_report.csv`
+  (`not_found`, `ambiguous` or `order_conflict`).
+* Re-runs start from the backups, so running it again after newer full downloads exist recovers more (e.g. ETFs
+  listed after July, which no earlier file knows).
+
 ## Testing
 
 ```
